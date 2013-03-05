@@ -8,4 +8,3 @@ This is just a personal script, but pull requests are welcome.
 ### Dependencies
 
 *   rb-fsevent
-*   ruby-growl (optional)

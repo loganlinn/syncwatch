@@ -1,8 +1,7 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 # SyncWatch by loganlinn
 # rsyncs filesystem changes
 
-require 'rubygems'
 require 'rb-fsevent'
 
 class SyncWatch
@@ -12,15 +11,10 @@ class SyncWatch
     @path              = params[:path]              || Dir.pwd
     @remote_path       = params[:remote_path]       || Dir.pwd
     @ignore_rules    ||= params[:ignore_rules]      || [/^\.git/, /^\.svn/, /\.DS_Store/]
-    @use_notifications = params[:use_notifications] || true
     @verbose           = params[:verbose]           || true
-    @growl_password    = params[:growl_password]    || ''
+    @port              = params[:port]
 
     @last_touched_dirs = nil
-
-    if @use_notifications
-      require 'ruby-growl'
-    end
 
     @rsync_excludes = if params[:rsync_excludes].nil?
                         ''
@@ -41,10 +35,6 @@ class SyncWatch
         puts "\tOnly ignored files changed -- skipping sync" if @verbose
       end
     end
-
-    if @use_notifications
-      @growl = Growl.new "127.0.0.1", @remote_path.split(':').first, ["sync complete"], nil, @growl_password
-    end
   end
 
   def requires_sync? (dirs)
@@ -57,13 +47,13 @@ class SyncWatch
   end
 
   def run_sync
-    start = Time.now
     print "\tSyncing..." if @verbose
-    %x[rsync -avPz --delete #{@rsync_excludes} -e ssh #{@path} #{@remote_path}]
-    duration = '%.2f' % (Time.now - start)
-    msg = "rsync complete (took #{duration}s)"
+    start = Time.now
+    rsh = 'ssh'
+    rsh += " -p#{@port}" unless @port.nil?
+    %x[rsync -avPz --delete #{@rsync_excludes} --rsh='#{rsh}' #{@path} #{@remote_path} ]
+    msg = "rsync complete (took %.2fs)" % (Time.now - start)
     puts msg if @verbose
-    @growl.notify('sync complete', '', msg) if @use_notifications
   end
 
   def run
@@ -87,7 +77,6 @@ require 'optparse'
 # Default options
 options = {
   :rsync_excludes          => [],
-  :use_notifications => false
 }
 
 OptionParser.new do |opts|
@@ -101,9 +90,8 @@ OptionParser.new do |opts|
     options[:rsync_excludes] << x
   end
 
-  opts.on('-g', '--use-growl [PASSWORD]', 'Enable Growl notifications') do |p|
-    options[:use_notifications] = true
-    options[:growl_password]    = p
+  opts.on('-p', '--port [PORT]', 'Port to SSH to on remote host') do |p|
+    options[:port] = p
   end
 
   opts.on_tail('--version', 'Show version') do
