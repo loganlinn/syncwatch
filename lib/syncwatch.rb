@@ -1,11 +1,10 @@
-#!/usr/bin/env ruby
-# SyncWatch by loganlinn
-# rsyncs filesystem changes
-
+# TODO: switch to guard/listen
 require 'rb-fsevent'
 
+# SyncWatch
+# rsync file system changes
 class SyncWatch
-  VERSION = [0, 2, 0]
+  VERSION = "0.2.1"
 
   def initialize(params)
     @path              = params[:path]              || Dir.pwd
@@ -70,54 +69,3 @@ class SyncWatch
     @ignore_rules.reduce(false) {|v,r| break(true) if dir =~ r }
   end
 end
-
-#=====
-require 'optparse'
-
-# Default options
-options = {
-  :rsync_excludes          => [],
-}
-
-OptionParser.new do |opts|
-  opts.banner = "Usage: syncwatch [otpions] <local path> <remote path>"
-
-  opts.on('-v', '--[no-]verbose', 'Run verbosely') do |v|
-    options[:verbose] = v
-  end
-
-  opts.on('-X', '--exclude=FILE', 'Exclude file from sync') do |x|
-    options[:rsync_excludes] << x
-  end
-
-  opts.on('-p', '--port [PORT]', 'Port to SSH to on remote host') do |p|
-    options[:port] = p
-  end
-
-  opts.on_tail('--version', 'Show version') do
-    puts SyncWatch::VERSION.join('.')
-    exit
-  end
-
-end.parse!
-
-options[:path]        = ARGV[0]
-options[:remote_path] = ARGV[1]
-
-# Error checking
-if options[:path].nil?
-  $stderr.puts "Local path not provided"
-  exit
-elsif options[:remote_path].nil?
-  $stderr.puts "Remote path not provided"
-  exit
-end
-
-unless File.directory? options[:path]
-  $stderr.puts "Invalid path specified"
-  exit
-end
-
-# Start
-sw = SyncWatch.new options
-sw.run
