@@ -5,6 +5,10 @@ that I have modified locally to a remote machine (via rsync).
 
 This is just a personal script, but pull requests are welcome.
 
-### Dependencies
+Also, still a work in progress. Currently targeted for OSX.
 
-*   rb-fsevent
+### Install
+
+`gem install syncwatch`
+
+https://rubygems.org/gems/syncwatch
